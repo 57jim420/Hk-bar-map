@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>香港酒吧地圖 (含飯店位置)</title>
+    <title>香港酒吧地圖</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Leaflet CSS -->
@@ -11,22 +11,10 @@
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <style>
-        /* 設定地圖容器的高度 */
-        #map { 
-            height: 100%; 
-            width: 100%;
-        }
-        /* 自定義 Leaflet 彈出視窗樣式 */
-        .leaflet-popup-content-wrapper {
-            border-radius: 8px;
-        }
-        .leaflet-popup-content {
-            font-family: 'Inter', sans-serif;
-        }
-        /* 自定義圖標樣式 */
-        .hotel-icon {
-            filter: drop-shadow(0 1px 3px rgba(0,0,0,0.4));
-        }
+        #map { height: 100%; width: 100%; }
+        .leaflet-popup-content-wrapper { border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .leaflet-popup-content { font-family: 'Inter', sans-serif; margin: 15px 20px 15px 15px; text-align: center; }
+        .hotel-icon { filter: drop-shadow(0 1px 3px rgba(0,0,0,0.4)); }
     </style>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -34,7 +22,6 @@
 </head>
 <body class="bg-gray-900 text-white flex flex-col h-screen" style="font-family: 'Noto Sans TC', sans-serif;">
 
-    <!-- 標題 -->
     <header class="bg-gray-800 shadow-lg z-20">
         <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
             <h1 class="text-2xl font-bold text-center text-yellow-400">香港酒吧地圖 (您的專屬清單)</h1>
@@ -42,15 +29,17 @@
         </div>
     </header>
 
-    <!-- 主要內容 -->
     <main class="flex-grow flex flex-col md:flex-row overflow-hidden">
-        <!-- 地圖容器 -->
-        <div id="map-container" class="w-full md:w-2/3 h-1/2 md:h-full">
-            <div id="map" class="rounded-lg shadow-md"></div>
+        <div class="w-full md:w-2/3 h-2/3 md:h-full flex flex-col">
+            <div id="map-container" class="flex-grow">
+                <div id="map" class="rounded-lg shadow-md"></div>
+            </div>
+            <div class="p-2 bg-gray-800 text-center text-xs text-gray-400">
+                請注意：本地圖 (使用 OpenStreetMap 圖資) 與 Google Maps 的建築物位置可能存在輕微視覺偏移。<br>請以點擊後在 Google Maps 中顯示的位置為最終依據。
+            </div>
         </div>
 
-        <!-- 酒吧列表 -->
-        <div id="bar-list" class="w-full md:w-1/3 p-4 bg-gray-800 overflow-y-auto h-1/2 md:h-full">
+        <div id="bar-list" class="w-full md:w-1/3 p-4 bg-gray-800 overflow-y-auto h-1/3 md:h-full">
             <div class="space-y-3">
                 <!-- 酒吧項目將由 JavaScript 動態生成 -->
             </div>
@@ -58,74 +47,100 @@
     </main>
 
     <script>
-        // 確保 DOM 已完全載入
         document.addEventListener('DOMContentLoaded', function () {
             
-            // 1. 初始化地圖
-            // 將地圖中心設定在香港中環酒吧密集區
-            const map = L.map('map').setView([22.283, 114.155], 16);
+            const map = L.map('map').setView([22.2835, 114.154], 16);
 
-            // 2. 加入圖資
-            // 使用 OpenStreetMap 作為地圖圖層
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             }).addTo(map);
 
-            // 3. 定義酒吧資料 - 根據您的專屬清單
-            const bars = [
-                { name: 'ARGO (四季酒店)', address: '中環金融街8號香港四季酒店大堂', coords: [22.2870, 114.1585], info: '裝潢華麗，酒單充滿未來感，探索烈酒世界的創新風味。' },
-                { name: 'The Old Man', address: '中環鴨巴甸街37號低座', coords: [22.2825, 114.1542], info: '靈感來自海明威的同名小說，提供創意十足的實驗性雞尾酒。' },
-                { name: 'The Orchard', address: '中環機利文新街28-30號', coords: [22.2838, 114.1525], info: '氣氛輕鬆的鄰里酒吧，據說要找 Alex。' },
-                { name: 'The Diplomat', address: '中環砵甸乍街45號 H Code LG樓', coords: [22.2824, 114.1558], info: '提供經典雞尾酒和舒適氛圍的美式酒吧。' },
-                { name: 'Tell Camellia', address: '中環砵甸乍街45號 H Code LG樓', coords: [22.2823, 114.1559], info: '以茶為主題的特色雞尾酒吧，將茶藝與調酒完美結合。' },
-                { name: 'Penicillin', address: '中環荷李活道23號 Amber Lodge 地下', coords: [22.2826, 114.1548], info: '香港首間永續發展酒吧，專注於本地採購和閉環生產模式。' },
-                { name: 'The Dispensary', address: '中環荷李活道10號大館01座', coords: [22.2818, 114.1543], info: '位於前中區警署，融合了英倫與東方殖民地風情。' },
-                { name: 'Lockdown', address: '中環荷李活道27號地下', coords: [22.2825, 114.1547], info: '隱藏在「理髮店」後的 Speakeasy 酒吧，充滿神秘感。' },
-                { name: 'AOAO', address: '中環威靈頓街2-8號 M88 14樓', coords: [22.2819, 114.1563], info: '日式風格酒吧，提供精緻的雞尾酒和壯麗的城市景觀。' }
+            // 最終高精度驗證後的酒吧清單
+            const locations = [
+                { name: 'AOAO', address: '中環皇后大道中38-48號 M88 16樓', coords: [22.28194, 114.15633] },
+                { name: 'Bar Mind', address: '中環伊利近街11號', coords: [22.28171, 114.15422] },
+                { name: 'The Savory Project', address: '中環伊利近街4號', coords: [22.28183, 114.15403] },
+                { name: 'The Opposite', address: '中環士丹利街18號地下', coords: [22.28270, 114.15651] },
+                { name: 'GOKAN', address: '中環擺花街13號', coords: [22.28220, 114.15495] },
+                { name: 'Bar de Luxe', address: '中環砵甸乍街45號 H Code 2樓', coords: [22.28243, 114.15581] },
+                { name: 'Quinary', address: '中環荷李活道56-58號', coords: [22.28293, 114.15531] },
+                { name: 'Bar Leone', address: '中環必列者士街15號', coords: [22.28202, 114.15191] },
+                { name: 'ARGO (四季酒店)', address: '中環金融街8號香港四季酒店大堂', coords: [22.28701, 114.15853] },
+                { name: 'The Old Man', address: '中環鴨巴甸街37號低座', coords: [22.28251, 114.15423] },
+                { name: 'The Orchard', address: '中環機利文新街28-30號', coords: [22.28318, 114.15285] },
+                { name: 'The Diplomat', address: '中環砵甸乍街45號 H Code LG樓', coords: [22.28243, 114.15581] },
+                { name: 'Tell Camellia', address: '中環砵甸乍街45號 H Code LG樓', coords: [22.28235, 114.15592] },
+                { name: 'Penicillin', address: '中環荷李活道23號 Amber Lodge 地下', coords: [22.28264, 114.15481] },
+                { name: 'The Dispensary', address: '中環荷李活道10號大館01座', coords: [22.28182, 114.15431] },
+                { name: 'Lockdown', address: '中環荷李活道27號地下', coords: [22.28255, 114.15472] },
+                { name: '晉逸精品酒店 中環', address: '香港中環威靈頓街122號', coords: [22.28355, 114.15342], isHotel: true }
             ];
 
-            // 4. 定義飯店資料和自訂圖標
-            const hotel = {
-                name: '晉逸精品酒店 中環',
-                address: '香港中環威靈頓街122號',
-                coords: [22.2835, 114.1534],
-                info: '您的飯店位置'
-            };
-
-            // 使用 SVG 建立一個自訂的飯店圖標 (黃色的房子)
             const hotelIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23facc15" width="32px" height="32px"><path d="M0 0h24v24H0z" fill="none"/><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>`;
             const hotelIcon = L.icon({
                 iconUrl: `data:image/svg+xml;charset=UTF-8,${hotelIconSVG}`,
                 iconSize: [32, 32],
-                iconAnchor: [16, 32], // 圖標底部中心點
-                popupAnchor: [0, -32], // 彈出視窗相對於圖標錨點的位置
+                iconAnchor: [16, 32],
+                popupAnchor: [0, -32],
                 className: 'hotel-icon'
             });
 
-            // 5. 遍歷酒吧資料，在地圖和列表中創建對應項目
+            function createPopupContent(item) {
+                const mapLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name + ', ' + item.address)}`;
+                return `
+                    <div class="space-y-3">
+                        <h3 class="text-lg font-bold text-gray-800">${item.name}</h3>
+                        <a href="${mapLink}" target="_blank" class="inline-block mt-2 px-4 py-2 bg-blue-500 text-white text-sm font-semibold rounded-lg shadow-md hover:bg-blue-600 transition-colors duration-200">
+                            在 Google Maps 上查看
+                        </a>
+                    </div>
+                `;
+            }
+
             const barListContainer = document.querySelector('#bar-list .space-y-3');
-            bars.forEach(bar => {
-                const marker = L.marker(bar.coords).addTo(map)
-                    .bindPopup(`<div class="text-base font-bold text-gray-800">${bar.name}</div><div class="text-sm text-gray-600">${bar.address}</div><div class="text-sm text-blue-600 mt-1">${bar.info}</div>`);
-                
+            const markers = {};
+
+            locations.sort((a, b) => a.name.localeCompare(b.name)).forEach(loc => {
+                const locId = loc.name.replace(/[^a-zA-Z0-9]/g, '-');
+                const markerOptions = loc.isHotel ? { icon: hotelIcon } : {};
+                const marker = L.marker(loc.coords, markerOptions).addTo(map)
+                    .bindPopup(createPopupContent(loc));
+
+                marker.on('click', function() {
+                    const listItem = document.getElementById(`list-item-${locId}`);
+                    if (listItem) {
+                        document.querySelectorAll('.list-item').forEach(item => {
+                            item.classList.remove('bg-yellow-500', 'text-gray-900');
+                            item.classList.add('bg-gray-700');
+                        });
+                        listItem.classList.add('bg-yellow-500', 'text-gray-900');
+                        listItem.classList.remove('bg-gray-700');
+                        listItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                });
+
+                markers[locId] = marker;
+
                 const listItem = document.createElement('div');
-                listItem.className = 'bg-gray-700 p-4 rounded-lg cursor-pointer hover:bg-yellow-500 hover:text-gray-900 transition-colors duration-200 shadow-md';
-                listItem.innerHTML = `<h3 class="font-bold text-lg">${bar.name}</h3><p class="text-sm text-gray-400">${bar.address}</p>`;
+                listItem.id = `list-item-${locId}`;
+                listItem.className = 'list-item bg-gray-700 p-4 rounded-lg cursor-pointer hover:bg-yellow-500 hover:text-gray-900 transition-colors duration-200 shadow-md';
+                listItem.innerHTML = `<h3 class="font-bold text-lg">${loc.name}</h3><p class="text-sm text-gray-400">${loc.address}</p>`;
                 
                 listItem.addEventListener('click', () => {
-                    map.flyTo(bar.coords, 18);
-                    marker.openPopup();
+                    document.querySelectorAll('.list-item').forEach(item => {
+                        item.classList.remove('bg-yellow-500', 'text-gray-900');
+                        item.classList.add('bg-gray-700');
+                    });
+                    listItem.classList.add('bg-yellow-500', 'text-gray-900');
+                    listItem.classList.remove('bg-gray-700');
+                    
+                    map.flyTo(loc.coords, 18);
+                    markers[locId].openPopup();
                 });
                 
                 barListContainer.appendChild(listItem);
             });
 
-            // 6. 在地圖上加入飯店標記
-            L.marker(hotel.coords, { icon: hotelIcon }).addTo(map)
-                .bindPopup(`<div class="text-base font-bold text-gray-800">${hotel.name}</div><div class="text-sm text-gray-600">${hotel.address}</div><div class="text-sm text-yellow-500 mt-1 font-semibold">${hotel.info}</div>`);
-
-
-            // 處理視窗大小變更，確保地圖正常顯示
             const mapContainer = document.getElementById('map-container');
             new ResizeObserver(() => {
                 map.invalidateSize();
@@ -134,4 +149,3 @@
     </script>
 </body>
 </html>
-
